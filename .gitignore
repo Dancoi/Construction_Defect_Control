@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 go.sum
+.github
 
 # Editor directories and files
 .vscode/*
