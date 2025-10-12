@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+bin/
+vendor/
+.env
+uploads/
+
+backend/configs/config.yml
+.github
