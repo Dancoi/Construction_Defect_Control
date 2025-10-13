@@ -6,7 +6,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/app ./cmd
 
 FROM alpine:3.18
-COPY --from=builder /out/app /app
-RUN mkdir -p /app/uploads && chown root:root /app/uploads
+# create application directory
+RUN mkdir -p /app /app/uploads
+# copy the built binary into /app/app
+COPY --from=builder /out/app /app/app
+RUN chown root:root /app/uploads && chmod +x /app/app
 EXPOSE 8080
-ENTRYPOINT ["/app"]
+ENTRYPOINT ["/app/app"]
