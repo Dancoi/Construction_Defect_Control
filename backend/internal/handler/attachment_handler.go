@@ -141,7 +141,8 @@ func (h *AttachmentHandler) Download(c *gin.Context) {
 	if !allowed {
 		if rv, ok := c.Get("role"); ok {
 			if role, ok2 := rv.(string); ok2 {
-				if role == "manager" || role == "admin" || role == "stakeholder" {
+				// allow managers, admins, stakeholders and engineers (engineers can view attachments for defects they participate in)
+				if role == "manager" || role == "admin" || role == "stakeholder" || role == "engineer" {
 					allowed = true
 				}
 			}
