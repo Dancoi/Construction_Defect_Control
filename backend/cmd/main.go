@@ -101,6 +101,8 @@ func main() {
 		api.GET("/users", userHandler.ListUsers)
 		api.GET("/users/me", middleware.JWTAuthMiddleware(), userHandler.Me)
 		api.PATCH("/users/me", middleware.JWTAuthMiddleware(), userHandler.UpdateMe)
+		// admin: update arbitrary user
+		api.PATCH("/users/:id", middleware.JWTAuthMiddleware(), middleware.RequireRole("admin"), userHandler.UpdateUser)
 		// comments under defects
 		projects.POST(":id/defects/:defectId/comments", middleware.JWTAuthMiddleware(), commentHandler.Create)
 		projects.GET(":id/defects/:defectId/comments", commentHandler.List)
