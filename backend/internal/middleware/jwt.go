@@ -27,7 +27,9 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		secret := viper.GetString("jwt.secret")
 		claims, err := utils.ParseJWT(secret, tokenStr)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "error", "error": "invalid token"})
+			// log header and underlying parse error for debugging
+			fmt.Printf("JWT middleware: incoming Authorization header='%s', parse error=%v\n", auth, err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "error", "error": fmt.Sprintf("invalid token: %v", err)})
 			return
 		}
 		// put user id and role into context
