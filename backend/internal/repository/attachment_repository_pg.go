@@ -22,3 +22,11 @@ func (r *attachmentRepoPG) FindByID(ctx context.Context, id uint) (*models.Attac
 	}
 	return &a, nil
 }
+
+func (r *attachmentRepoPG) ListByDefect(ctx context.Context, defectID uint) ([]*models.Attachment, error) {
+	var list []*models.Attachment
+	if err := r.db.WithContext(ctx).Where("defect_id = ?", defectID).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}

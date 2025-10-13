@@ -114,6 +114,9 @@ func (m *mockAttachRepoFile) Create(ctx context.Context, a *models.Attachment) e
 func (m *mockAttachRepoFile) FindByID(ctx context.Context, id uint) (*models.Attachment, error) {
 	return &models.Attachment{ID: id, Path: m.path, Filename: m.fname, ContentType: "text/plain", UploaderID: 1}, nil
 }
+func (m *mockAttachRepoFile) ListByDefect(ctx context.Context, defectID uint) ([]*models.Attachment, error) {
+	return []*models.Attachment{{ID: 1, Path: m.path, Filename: m.fname}}, nil
+}
 
 // reuse mockDefectSvc from handler tests
 type mockDefectSvc struct{}
@@ -123,4 +126,10 @@ func (m *mockDefectSvc) Create(ctx context.Context, dto service.CreateDefectDTO)
 }
 func (m *mockDefectSvc) ListByProject(ctx context.Context, projectID uint) ([]*models.Defect, error) {
 	return []*models.Defect{}, nil
+}
+func (m *mockDefectSvc) FindByID(ctx context.Context, id uint) (*models.Defect, error) {
+	return &models.Defect{ID: id, Title: "mock"}, nil
+}
+func (m *mockDefectSvc) Update(ctx context.Context, id uint, dto service.UpdateDefectDTO) (*models.Defect, error) {
+	return &models.Defect{ID: id, Title: "mock"}, nil
 }

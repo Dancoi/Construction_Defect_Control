@@ -30,3 +30,7 @@ func (r *projectRepoPG) List(ctx context.Context) ([]*models.Project, error) {
 	}
 	return list, nil
 }
+
+func (r *projectRepoPG) Update(ctx context.Context, p *models.Project) error {
+	return r.db.WithContext(ctx).Save(p).Error
+}

@@ -14,4 +14,5 @@ type UserRepository interface {
 	Count(ctx context.Context) (int64, error)
 	// List returns all users (or a subset) for autocomplete/lookup
 	List(ctx context.Context) ([]*models.User, error)
+	Update(ctx context.Context, u *models.User) error
 }

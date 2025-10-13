@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -72,8 +73,16 @@ func (h *ProjectHandler) List(c *gin.Context) {
 // @Security BearerAuth
 // @Router /api/v1/projects/{id}/defects [post]
 func (h *ProjectHandler) CreateDefect(c *gin.Context) {
-	var dto service.CreateDefectDTO
-	if err := c.ShouldBindJSON(&dto); err != nil {
+	// bind into a local request type so we can accept multiple date formats
+	var req struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Severity    string `json:"severity"`
+		AssigneeID  uint   `json:"assignee_id"`
+		DueDate     string `json:"due_date"`
+		Priority    string `json:"priority"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
 		return
 	}
@@ -84,7 +93,32 @@ func (h *ProjectHandler) CreateDefect(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid project id"})
 		return
 	}
+	// build service DTO and parse due_date if provided
+	var dto service.CreateDefectDTO
 	dto.ProjectID = projectID
+	dto.Title = req.Title
+	dto.Description = req.Description
+	dto.Severity = req.Severity
+	dto.AssigneeID = req.AssigneeID
+	dto.Priority = req.Priority
+	if req.DueDate != "" {
+		// try several common date formats: RFC3339 and date-only YYYY-MM-DD
+		var parsed time.Time
+		var parseErr error
+		layouts := []string{time.RFC3339, "2006-01-02", "2006-01-02T15:04:05", "2006-01-02 15:04:05"}
+		for _, l := range layouts {
+			parsed, parseErr = time.Parse(l, req.DueDate)
+			if parseErr == nil {
+				dto.DueDate = &parsed
+				break
+			}
+		}
+		if parseErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": fmt.Sprintf("invalid due_date format: %v", parseErr)})
+			return
+		}
+	}
+
 	d, err := h.defectSvc.Create(c.Request.Context(), dto)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
@@ -121,6 +155,118 @@ func (h *ProjectHandler) ListDefects(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": list})
+}
+
+// GetProject godoc
+// @Summary Get project
+// @Description Get project by id
+// @Tags projects
+// @Produce json
+// @Param id path int true "Project ID"
+// @Success 200 {object} handler.ProjectResponse
+// @Router /api/v1/projects/{id} [get]
+func (h *ProjectHandler) GetProject(c *gin.Context) {
+	pid := c.Param("id")
+	var id uint
+	if _, err := fmt.Sscanf(pid, "%d", &id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid project id"})
+		return
+	}
+	p, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "project not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": p})
+}
+
+// GetDefect godoc
+// @Summary Get defect
+// @Description Get defect by id
+// @Tags defects
+// @Produce json
+// @Param id path int true "Project ID"
+// @Param defectId path int true "Defect ID"
+// @Success 200 {object} handler.DefectResponse
+// @Router /api/v1/projects/{id}/defects/{defectId} [get]
+func (h *ProjectHandler) GetDefect(c *gin.Context) {
+	did := c.Param("defectId")
+	var id uint
+	if _, err := fmt.Sscanf(did, "%d", &id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid defect id"})
+		return
+	}
+	d, err := h.defectSvc.FindByID(c.Request.Context(), id)
+	if err != nil || d == nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "defect not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": d})
+}
+
+// UpdateProject godoc
+// @Summary Update a project
+// @Description Update project fields
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path int true "Project ID"
+// @Param body body service.UpdateProjectDTO true "Update Project"
+// @Success 200 {object} handler.ProjectResponse
+// @Failure 400 {object} map[string]interface{}}
+// @Security BearerAuth
+// @Router /api/v1/projects/{id} [patch]
+func (h *ProjectHandler) UpdateProject(c *gin.Context) {
+	pid := c.Param("id")
+	var id uint
+	if _, err := fmt.Sscanf(pid, "%d", &id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid project id"})
+		return
+	}
+	var dto service.UpdateProjectDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+	p, err := h.svc.Update(c.Request.Context(), id, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": p})
+}
+
+// UpdateDefect godoc
+// @Summary Update a defect
+// @Description Update defect fields
+// @Tags defects
+// @Accept json
+// @Produce json
+// @Param id path int true "Project ID"
+// @Param defectId path int true "Defect ID"
+// @Param body body service.UpdateDefectDTO true "Update Defect"
+// @Success 200 {object} handler.DefectResponse
+// @Failure 400 {object} map[string]interface{}}
+// @Security BearerAuth
+// @Router /api/v1/projects/{id}/defects/{defectId} [patch]
+func (h *ProjectHandler) UpdateDefect(c *gin.Context) {
+	did := c.Param("defectId")
+	var id uint
+	if _, err := fmt.Sscanf(did, "%d", &id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid defect id"})
+		return
+	}
+	var dto service.UpdateDefectDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+	d, err := h.defectSvc.Update(c.Request.Context(), id, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": d})
 }
 
 // ListDefects godoc

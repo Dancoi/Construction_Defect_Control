@@ -20,6 +20,7 @@ func (m *mockDefectRepo) FindByID(ctx context.Context, id uint) (*models.Defect,
 func (m *mockDefectRepo) ListByProject(ctx context.Context, projectID uint) ([]*models.Defect, error) {
 	return []*models.Defect{}, nil
 }
+func (m *mockDefectRepo) Update(ctx context.Context, d *models.Defect) error { return nil }
 
 type mockProjectRepoNotFound struct{}
 
@@ -32,11 +33,15 @@ func (m *mockProjectRepoNotFound) FindByID(ctx context.Context, id uint) (*model
 func (m *mockProjectRepoNotFound) List(ctx context.Context) ([]*models.Project, error) {
 	return nil, errors.New("not implemented")
 }
+func (m *mockProjectRepoNotFound) Update(ctx context.Context, p *models.Project) error {
+	return errors.New("not implemented")
+}
 
 func TestCreateDefect_ProjectNotFound(t *testing.T) {
 	repo := &mockDefectRepo{}
 	projRepo := &mockProjectRepoNotFound{}
-	s := service.NewDefectService(repo, projRepo)
+	// supply a mock user repo (mockUserRepo is declared in auth_service_test.go)
+	s := service.NewDefectService(repo, projRepo, &mockUserRepo{})
 	dto := service.CreateDefectDTO{ProjectID: 999, Title: "x"}
 	_, err := s.Create(context.Background(), dto)
 	assert.Error(t, err)
@@ -45,7 +50,7 @@ func TestCreateDefect_ProjectNotFound(t *testing.T) {
 func TestCreateDefect_Success(t *testing.T) {
 	repo := &mockDefectRepo{}
 	projRepo := &mockProjectRepo{}
-	s := service.NewDefectService(repo, projRepo)
+	s := service.NewDefectService(repo, projRepo, &mockUserRepo{})
 	dto := service.CreateDefectDTO{ProjectID: 1, Title: "x"}
 	d, err := s.Create(context.Background(), dto)
 	assert.NoError(t, err)
@@ -62,3 +67,6 @@ func (m *mockProjectRepo) FindByID(ctx context.Context, id uint) (*models.Projec
 func (m *mockProjectRepo) List(ctx context.Context) ([]*models.Project, error) {
 	return []*models.Project{}, nil
 }
+func (m *mockProjectRepo) Update(ctx context.Context, p *models.Project) error { return nil }
+
+// note: mockUserRepo type is provided in auth_service_test.go

@@ -10,4 +10,5 @@ type ProjectRepository interface {
 	Create(ctx context.Context, p *models.Project) error
 	FindByID(ctx context.Context, id uint) (*models.Project, error)
 	List(ctx context.Context) ([]*models.Project, error)
+	Update(ctx context.Context, p *models.Project) error
 }

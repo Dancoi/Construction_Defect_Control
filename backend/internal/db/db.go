@@ -20,7 +20,7 @@ func Connect() (*gorm.DB, error) {
 		return nil, err
 	}
 	// AutoMigrate models (add more models as they are implemented)
-	if err := db.AutoMigrate(&models.User{}, &models.Project{}, &models.Defect{}, &models.Attachment{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Project{}, &models.Defect{}, &models.Attachment{}, &models.Comment{}); err != nil {
 		return nil, err
 	}
 	return db, nil

@@ -30,3 +30,7 @@ func (r *defectRepoPG) ListByProject(ctx context.Context, projectID uint) ([]*mo
 	}
 	return list, nil
 }
+
+func (r *defectRepoPG) Update(ctx context.Context, d *models.Defect) error {
+	return r.db.WithContext(ctx).Save(d).Error
+}

@@ -49,12 +49,16 @@ func main() {
 
 	// project/defect services & handlers
 	projectSvc := service.NewProjectService(projectRepo)
-	defectSvc := service.NewDefectService(defectRepo, projectRepo)
+	defectSvc := service.NewDefectService(defectRepo, projectRepo, userRepo)
 	projectHandler := handler.NewProjectHandler(projectSvc, defectSvc)
 	// attachments
 	storageSvc := service.NewLocalStorage()
 	attachHandler := handler.NewAttachmentHandler(storageSvc, attachRepo, defectSvc)
-	userHandler := handler.NewUserHandler(userRepo)
+	userHandler := handler.NewUserHandler(userRepo, authSvc)
+	// comments
+	commentRepo := repository.NewCommentRepository(gdb)
+	commentSvc := service.NewCommentService(commentRepo)
+	commentHandler := handler.NewCommentHandler(commentSvc)
 
 	r := gin.Default()
 
@@ -81,13 +85,27 @@ func main() {
 		projects := api.Group("/projects")
 		projects.POST("/", middleware.JWTAuthMiddleware(), middleware.RequireRole("manager", "admin"), projectHandler.Create)
 		projects.GET("/", projectHandler.List)
+		projects.PATCH(":id", middleware.JWTAuthMiddleware(), middleware.RequireRole("manager", "admin"), projectHandler.UpdateProject)
 		projects.POST(":id/defects", middleware.JWTAuthMiddleware(), middleware.RequireRole("engineer", "manager", "admin"), projectHandler.CreateDefect)
 		projects.GET("/:id/defects", projectHandler.ListDefects)
+		projects.GET("/:id", projectHandler.GetProject)
+		projects.GET(":id/defects/:defectId", projectHandler.GetDefect)
+		projects.PATCH(":id/defects/:defectId", middleware.JWTAuthMiddleware(), middleware.RequireRole("engineer", "manager", "admin"), projectHandler.UpdateDefect)
 		// attachments (upload under defects)
 		projects.POST(":id/attachments", middleware.JWTAuthMiddleware(), middleware.RequireRole("engineer", "manager", "admin"), attachHandler.Upload)
 		api.GET("/attachments/:id", middleware.JWTAuthMiddleware(), attachHandler.Download)
+		// listing attachments by defect
+		api.GET("/attachments", middleware.JWTAuthMiddleware(), attachHandler.List)
+		projects.GET(":id/defects/:defectId/attachments", middleware.JWTAuthMiddleware(), attachHandler.List)
 		// users list for autocomplete
 		api.GET("/users", userHandler.ListUsers)
+		api.GET("/users/me", middleware.JWTAuthMiddleware(), userHandler.Me)
+		api.PATCH("/users/me", middleware.JWTAuthMiddleware(), userHandler.UpdateMe)
+		// comments under defects
+		projects.POST(":id/defects/:defectId/comments", middleware.JWTAuthMiddleware(), commentHandler.Create)
+		projects.GET(":id/defects/:defectId/comments", commentHandler.List)
+		// also expose a global comments list endpoint that accepts ?defect_id= for flexibility
+		api.GET("/comments", commentHandler.List)
 	}
 
 	// Serve generated swagger files and Swagger UI

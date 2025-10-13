@@ -27,6 +27,7 @@ type AuthService interface {
 	Register(ctx context.Context, dto RegisterDTO) (*models.User, error)
 	Login(ctx context.Context, dto LoginDTO) (string, *models.User, error)
 	Me(ctx context.Context, id uint) (*models.User, error)
+	UpdateProfile(ctx context.Context, id uint, name, email *string) (*models.User, error)
 }
 
 type authService struct {
@@ -92,4 +93,21 @@ func (s *authService) Login(ctx context.Context, dto LoginDTO) (string, *models.
 
 func (s *authService) Me(ctx context.Context, id uint) (*models.User, error) {
 	return s.repo.FindByID(ctx, id)
+}
+
+func (s *authService) UpdateProfile(ctx context.Context, id uint, name, email *string) (*models.User, error) {
+	u, err := s.repo.FindByID(ctx, id)
+	if err != nil || u == nil {
+		return nil, err
+	}
+	if name != nil {
+		u.Name = *name
+	}
+	if email != nil {
+		u.Email = *email
+	}
+	if err := s.repo.Update(ctx, u); err != nil {
+		return nil, err
+	}
+	return u, nil
 }

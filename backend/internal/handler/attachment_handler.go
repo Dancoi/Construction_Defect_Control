@@ -104,7 +104,7 @@ func (h *AttachmentHandler) Upload(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
 			return
 		}
-		results = append(results, gin.H{"id": a.ID, "filename": a.Filename, "url": filepath.Join("/uploads", a.Path)})
+		results = append(results, gin.H{"id": a.ID, "filename": a.Filename, "url": filepath.Join("/uploads", a.Path), "content_type": a.ContentType, "size": a.Size})
 	}
 	c.JSON(http.StatusCreated, gin.H{"status": "ok", "data": results})
 }
@@ -163,8 +163,57 @@ func (h *AttachmentHandler) Download(c *gin.Context) {
 		return
 	}
 	c.Header("Content-Type", a.ContentType)
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", a.Filename))
+	// If content type is an image, prefer inline display in browser
+	if a.ContentType != "" && (a.ContentType == "image/jpeg" || a.ContentType == "image/png" || a.ContentType == "image/gif" || a.ContentType == "image/webp") {
+		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", a.Filename))
+	} else {
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", a.Filename))
+	}
 	c.File(full)
+}
+
+// ListAttachments godoc
+// @Summary List attachments
+// @Description List attachments by defect id
+// @Tags attachments
+// @Produce json
+// @Param defect_id query int false "Defect ID"
+// @Param id path int false "Project or defect id in path"
+// @Success 200 {array} handler.AttachmentResponse
+// @Router /api/v1/attachments [get]
+func (h *AttachmentHandler) List(c *gin.Context) {
+	// prefer query param defect_id
+	q := c.Query("defect_id")
+	var defectID uint
+	if q != "" {
+		if _, err := fmt.Sscanf(q, "%d", &defectID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid defect_id"})
+			return
+		}
+	} else {
+		// allow path param id when route is /projects/:id/defects/:defectId/attachments
+		did := c.Param("defectId")
+		if did != "" {
+			if _, err := fmt.Sscanf(did, "%d", &defectID); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "invalid defect id in path"})
+				return
+			}
+		}
+	}
+	if defectID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "defect_id required"})
+		return
+	}
+	list, err := h.attachRepo.ListByDefect(c.Request.Context(), defectID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+	var out []gin.H
+	for _, a := range list {
+		out = append(out, gin.H{"id": a.ID, "filename": a.Filename, "url": filepath.Join("/uploads", a.Path), "content_type": a.ContentType, "size": a.Size})
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "data": out})
 }
 
 // DownloadAttachment godoc

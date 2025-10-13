@@ -23,6 +23,7 @@ func (m *mockUserRepo) Count(ctx context.Context) (int64, error) { return 0, nil
 func (m *mockUserRepo) List(ctx context.Context) ([]*models.User, error) {
 	return []*models.User{{ID: 1, Name: "Test", Email: "t@example.com"}}, nil
 }
+func (m *mockUserRepo) Update(ctx context.Context, u *models.User) error { return nil }
 
 func TestRegister(t *testing.T) {
 	repo := &mockUserRepo{}

@@ -29,6 +29,9 @@ func (m *mockAttachRepo) Create(ctx context.Context, a *models.Attachment) error
 func (m *mockAttachRepo) FindByID(ctx context.Context, id uint) (*models.Attachment, error) {
 	return &models.Attachment{ID: id, Path: "2025/10/11/file.jpg", Filename: "file.jpg", ContentType: "image/jpeg"}, nil
 }
+func (m *mockAttachRepo) ListByDefect(ctx context.Context, defectID uint) ([]*models.Attachment, error) {
+	return []*models.Attachment{}, nil
+}
 
 // mock defect service that accepts any project id
 type mockDefectSvc struct{}
@@ -38,6 +41,19 @@ func (m *mockDefectSvc) Create(ctx context.Context, dto service.CreateDefectDTO)
 }
 func (m *mockDefectSvc) ListByProject(ctx context.Context, projectID uint) ([]*models.Defect, error) {
 	return []*models.Defect{}, nil
+}
+func (m *mockDefectSvc) FindByID(ctx context.Context, id uint) (*models.Defect, error) {
+	return &models.Defect{ID: id, Title: "mock"}, nil
+}
+func (m *mockDefectSvc) Update(ctx context.Context, id uint, dto service.UpdateDefectDTO) (*models.Defect, error) {
+	// for tests, just return a defect with updated title if provided
+	d := &models.Defect{ID: id}
+	if dto.Title != nil {
+		d.Title = *dto.Title
+	} else {
+		d.Title = "mock"
+	}
+	return d, nil
 }
 
 func TestUploadHandler(t *testing.T) {

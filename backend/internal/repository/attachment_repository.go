@@ -9,4 +9,5 @@ import (
 type AttachmentRepository interface {
 	Create(ctx context.Context, a *models.Attachment) error
 	FindByID(ctx context.Context, id uint) (*models.Attachment, error)
+	ListByDefect(ctx context.Context, defectID uint) ([]*models.Attachment, error)
 }
