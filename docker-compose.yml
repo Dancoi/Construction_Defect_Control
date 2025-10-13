@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
     depends_on: [db]
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/defectdb?sslmode=disable
+      - DATABASE_URL=postgres://admin:secure_password@db:5432/defect_system?sslmode=disable
       - UPLOADS_PATH=/app/uploads
     ports: ["8080:8080"]
     volumes:
