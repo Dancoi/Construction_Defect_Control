@@ -1,0 +1,337 @@
+definitions:
+  handler.AttachmentResponse:
+    properties:
+      content_type:
+        example: image/jpeg
+        type: string
+      created_at:
+        example: "2025-10-12T12:00:00Z"
+        type: string
+      defect_id:
+        example: 1
+        type: integer
+      filename:
+        example: photo.jpg
+        type: string
+      id:
+        example: 1
+        type: integer
+      size:
+        example: 23456
+        type: integer
+      uploader_id:
+        example: 2
+        type: integer
+      url:
+        example: /uploads/2025/10/12/uuid-photo.jpg
+        type: string
+    type: object
+  handler.AuthResponse:
+    properties:
+      token:
+        example: eyJhbGci...
+        type: string
+      user:
+        $ref: '#/definitions/handler.UserResponse'
+    type: object
+  handler.DefectResponse:
+    properties:
+      created_at:
+        example: "2025-10-12T12:00:00Z"
+        type: string
+      description:
+        example: Long vertical crack on east wall
+        type: string
+      id:
+        example: 1
+        type: integer
+      project_id:
+        example: 1
+        type: integer
+      severity:
+        example: major
+        type: string
+      status:
+        example: open
+        type: string
+      title:
+        example: Cracked wall
+        type: string
+    type: object
+  handler.ProjectResponse:
+    properties:
+      address:
+        example: 123 Main St, City
+        type: string
+      created_at:
+        example: "2025-10-12T12:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: New Building
+        type: string
+    type: object
+  handler.UserResponse:
+    properties:
+      created_at:
+        example: "2025-10-12T12:00:00Z"
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: John Doe
+        type: string
+      role:
+        example: engineer
+        type: string
+    type: object
+  service.CreateDefectDTO:
+    properties:
+      description:
+        type: string
+      project_id:
+        type: integer
+      severity:
+        type: string
+      title:
+        type: string
+    required:
+    - project_id
+    - title
+    type: object
+  service.CreateProjectDTO:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  service.LoginDTO:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  service.RegisterDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/attachments/{id}:
+    get:
+      description: Download attachment by id
+      parameters:
+      - description: Attachment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AttachmentResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Download attachment
+      tags:
+      - attachments
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login user and return token
+      parameters:
+      - description: Login
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AuthResponse'
+      summary: Login
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      description: Get current authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Current user
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Register
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.RegisterDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.AuthResponse'
+      summary: Register user
+      tags:
+      - auth
+  /api/v1/projects:
+    get:
+      description: Get list of projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.ProjectResponse'
+            type: array
+      summary: List projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Create a new project
+      parameters:
+      - description: Create Project
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProjectDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a project
+      tags:
+      - projects
+  /api/v1/projects/{id}/attachments:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload one or multiple files as attachments to a defect
+      parameters:
+      - description: Defect ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: files
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            items:
+              $ref: '#/definitions/handler.AttachmentResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Upload attachments to defect
+      tags:
+      - attachments
+  /api/v1/projects/{id}/defects:
+    post:
+      consumes:
+      - application/json
+      description: Create a defect under specified project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Create Defect
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateDefectDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.DefectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a defect in a project
+      tags:
+      - defects
+swagger: "2.0"

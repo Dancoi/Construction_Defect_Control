@@ -14,3 +14,13 @@ The React Compiler is not enabled on this template. To add it, see [this documen
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Running the full stack with Docker Compose
+
+To run both backend and database locally using Docker Compose from the repository root:
+
+```powershell
+docker compose up --build
+```
+
+This compose file builds the backend from `./backend` and starts Postgres. The backend listens on port 8080 by default.

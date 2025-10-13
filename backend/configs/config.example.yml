@@ -1,0 +1,11 @@
+server:
+  addr: ":8080"
+database:
+  url: "postgres://admin:secure_password@db:5432/defect_system?sslmode=disable"
+jwt:
+  secret: "replace-with-secret"
+uploads:
+  path: "./uploads"
+auth:
+  bootstrap_first_admin: false
+  default_role: "engineer"

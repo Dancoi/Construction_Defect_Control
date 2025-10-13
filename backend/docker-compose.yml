@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: defect_system
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secure_password
+    ports: ["5432:5432"]
+    volumes: ["db-data:/var/lib/postgresql/data"]
+
+  app:
+    build: .
+    depends_on: [db]
+    environment:
+      - DATABASE_URL=postgres://admin:secure_password@db:5432/defect_system?sslmode=disable
+      - UPLOADS_PATH=/app/uploads
+    ports: ["8080:8080"]
+    volumes:
+      - uploads-data:/app/uploads
+
+volumes:
+  db-data:
+  uploads-data:
